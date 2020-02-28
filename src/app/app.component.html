@@ -1,0 +1,14 @@
+<!-- The content below is only a placeholder and can be replaced. -->
+<div class="header-container">
+  <h1 class="header">
+    {{Title}}
+  </h1>
+</div>
+
+<app-esri-map
+  [center]="mapCenter"
+  [basemap]="basemapType"
+  [zoom]="mapZoomLevel"
+  (mapLoadedEvent)="mapLoadedEvent($event)"
+>
+</app-esri-map>
