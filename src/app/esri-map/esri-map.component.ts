@@ -55,6 +55,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   private _loaded = false;
   private _view: esri.MapView = null;
   private _sketch: esri.Sketch = null;
+  private _search: esri.widgetsSearch = null;
 
   get mapLoaded(): boolean {
     return this._loaded;
@@ -97,10 +98,30 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     if (jsonFeatures.length > 0) {
       this.jsonResultText = JSON.stringify(jsonFeatures);
       const url = 'https://services1.arcgis.com/g2TonOxuRkIqSOFx/arcgis/rest/services/Geodev_101_Polygon/FeatureServer/0/addFeatures';
-      this.http.post<any>(url, { f: 'json', features: this.jsonResultText}).subscribe(data => {
+      this.http.post<any>(url, { f: 'json', features: this.jsonResultText }, {
+        headers: {
+          'Content-Type' : 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Method': 'POST'
+        }
+      }).subscribe(data => {
         console.log(data);
       });
     }
+  }
+
+  async initializeSearch() {
+    const [EsriSearch] = await loadModules([
+      'esri/widgets/Search'
+    ]);
+
+    const search: esri.widgetsSearch = new EsriSearch({
+      view: this._view
+    });
+    this._search = search;
+
+    this._view.ui.add(search, 'top-left');
+    this._view.ui.move('zoom', 'top-left');
   }
 
   async initializeSketch() {
@@ -115,7 +136,8 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     const sketch: esri.Sketch = new EsriSketch({
       layer,
       view: this._view,
-      creationMode: 'update'
+      creationMode: 'update',
+      availableCreateTools: ['polygon']
     });
     this._sketch = sketch;
 
@@ -128,9 +150,10 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   async initializeMap() {
     try {
       // Load the modules for the ArcGIS API for JavaScript
-      const [EsriMap, EsriMapView] = await loadModules([
+      const [EsriMap, EsriMapView, EsriWatchUtils] = await loadModules([
         'esri/Map',
-        'esri/views/MapView'
+        'esri/views/MapView',
+        'esri/core/watchUtils'
       ]);
 
       // Configure the Map
@@ -149,11 +172,19 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       };
 
       this._view = new EsriMapView(mapViewProperties);
+
       await this._view.when();
+
+      this._view.watch('scale', this._scaleChanged);
+
       return this._view;
     } catch (error) {
       console.log('EsriLoader: ', error);
     }
+  }
+
+  _scaleChanged(newVal, oldVal, propName, target) {
+    console.log(evt);
   }
 
   ngOnInit() {
@@ -165,6 +196,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       this.mapLoadedEvent.emit(true);
 
       this.initializeSketch();
+      this.initializeSearch();
     });
   }
 
