@@ -38,10 +38,12 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   @ViewChild('mapViewNode', { static: true }) private mapViewEl: ElementRef;
   @ViewChild('submitButtonNode', { static: true }) private submitButtonEl: ElementRef;
   @ViewChild('jsonResultNode', { static: true }) private jsonResultEl: ElementRef;
+  @ViewChild('warningMessageNode', { static: true }) private warningMessageEl: ElementRef;
 
   // html text
   public buttonText = 'Submit Selected Feature(s)';
   public jsonResultText = 'No result yet';
+  public warningMessageText = 'Zoom in further to start drawing';
 
   /**
    * _zoom sets map zoom
@@ -142,8 +144,15 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     this._sketch = sketch;
 
     this._view.ui.add(sketch, 'top-right');
+    this._view.ui.add(this.warningMessageEl.nativeElement, 'top-right');
+    this.warningMessageEl.nativeElement.classList.remove('hidden');
     this._view.ui.add(this.submitButtonEl.nativeElement, 'top-right');
+    this.submitButtonEl.nativeElement.classList.remove('hidden');
     this._view.ui.add(this.jsonResultEl.nativeElement, 'top-right');
+    this.jsonResultEl.nativeElement.classList.remove('hidden');
+
+    this._scaleChanged(0, 100000);
+
     return sketch;
   }
 
@@ -175,7 +184,9 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
       await this._view.when();
 
-      this._view.watch('scale', this._scaleChanged);
+      this._view.watch('scale', (oldVal, newVal) => {
+        this._scaleChanged(oldVal, newVal);
+      });
 
       return this._view;
     } catch (error) {
@@ -183,8 +194,20 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     }
   }
 
-  _scaleChanged(newVal, oldVal, propName, target) {
-    console.log(evt);
+  _scaleChanged(oldVal, newVal) {
+    const polygonButton = document.querySelector('.esri-sketch__button.esri-icon-polygon');
+    if (polygonButton) {
+      if (newVal > 10000) {
+        polygonButton.setAttribute('disabled', '');
+        this.warningMessageEl.nativeElement.classList.remove('hidden');
+        this._sketch.cancel();
+      } else {
+        polygonButton.removeAttribute('disabled');
+        this.warningMessageEl.nativeElement.classList.add('hidden');
+      }
+    } else {
+      setTimeout(() => { this._scaleChanged(oldVal, newVal); }, 1000);
+    }
   }
 
   ngOnInit() {

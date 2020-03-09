@@ -1,5 +1,6 @@
 <!-- Here's the DIV that we inject the map into -->
 <div #mapViewNode>
-  <button #submitButtonNode (click)="submitButtonClicked()">{{buttonText}}</button>
-  <div class="json-result" #jsonResultNode>{{jsonResultText}}</div>
+  <button class="hidden" #submitButtonNode (click)="submitButtonClicked()">{{buttonText}}</button>
+  <div class="json-result hidden" #jsonResultNode>{{jsonResultText}}</div>
+  <div class="warning-message hidden" #warningMessageNode>{{warningMessageText}}</div>
 </div>

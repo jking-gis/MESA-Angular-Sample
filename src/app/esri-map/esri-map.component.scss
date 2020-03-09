@@ -5,9 +5,14 @@
   height: calc(100vh - 66px);
 }
 
-.json-result {
+.json-result,
+.warning-message {
   background-color: white;
   padding: 6px;
   max-width: 400px;
   overflow: auto;
+}
+
+.hidden {
+  display: none;
 }
