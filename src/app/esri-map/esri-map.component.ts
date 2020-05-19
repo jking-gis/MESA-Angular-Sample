@@ -37,13 +37,13 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   // The <div> where we will place the map
   @ViewChild('mapViewNode', { static: true }) private mapViewEl: ElementRef;
   @ViewChild('submitButtonNode', { static: true }) private submitButtonEl: ElementRef;
-  @ViewChild('jsonResultNode', { static: true }) private jsonResultEl: ElementRef;
   @ViewChild('warningMessageNode', { static: true }) private warningMessageEl: ElementRef;
+  @ViewChild('inputProjectIdNode', { static: true }) private inputProjectIdEl: ElementRef;
 
   // html text
   public buttonText = 'Submit Selected Feature(s)';
-  public jsonResultText = 'No result yet';
   public warningMessageText = 'Zoom in further to start drawing';
+  public projectIdPlaceholder = 'Please enter project ID';
 
   /**
    * _zoom sets map zoom
@@ -58,6 +58,10 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   private _view: esri.MapView = null;
   private _sketch: esri.Sketch = null;
   private _search: esri.widgetsSearch = null;
+  private _geoprocessor: esri.Geoprocessor = null;
+
+  private _editService: 'https://services1.arcgis.com/g2TonOxuRkIqSOFx/arcgis/rest/services/Geodev_101_Polygon/FeatureServer/0';
+  private _editLayer: esri.FeatureLayer = null;
 
   get mapLoaded(): boolean {
     return this._loaded;
@@ -94,22 +98,36 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
   submitButtonClicked() {
     const jsonFeatures = [];
-    this._sketch.updateGraphics.forEach(graphic => {
+    const inputProjectId = this.inputProjectIdEl.nativeElement.value;
+    this._sketch.layer.graphics.forEach(graphic => {
+      graphic.attributes = {
+        projectId: inputProjectId
+      };
       jsonFeatures.push(graphic.toJSON());
     });
     if (jsonFeatures.length > 0) {
-      this.jsonResultText = JSON.stringify(jsonFeatures);
-      const url = 'https://services1.arcgis.com/g2TonOxuRkIqSOFx/arcgis/rest/services/Geodev_101_Polygon/FeatureServer/0/addFeatures';
-      this.http.post<any>(url, { f: 'json', features: this.jsonResultText }, {
-        headers: {
-          'Content-Type' : 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Method': 'POST'
-        }
-      }).subscribe(data => {
-        console.log(data);
+      const jsonResultText = JSON.stringify(jsonFeatures);
+      const params = {
+        addFeaturesParams: jsonResultText,
+        serviceUrl: this._editService
+      };
+      this._geoprocessor.submitJob(params).then((jobInfo) => {
+        const jobid = jobInfo.jobId;
+        const options = {
+          interval: 1500,
+          statusCallback: (j) => {
+            console.log('Job Status: ', j.jobStatus);
+          }
+        };
       });
     }
+  }
+
+  inputProjectIdChanged() {
+    this.submitButtonEl.nativeElement.disabled = !(
+      this.inputProjectIdEl.nativeElement.value &&
+      this.inputProjectIdEl.nativeElement !== ''
+    );
   }
 
   async initializeSearch() {
@@ -125,6 +143,18 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     this._view.ui.add(search, 'top-left');
     this._view.ui.move('zoom', 'top-left');
   }
+
+  // async initializeEditor() {
+  //   const [EsriEditor] = await loadModules([
+  //     'esri/widgets/Editor'
+  //   ]);
+
+  //   const editor: esri.Editor = new EsriEditor({
+  //     view: this._view
+  //   });
+
+  //   this._view.ui.add(editor, 'top-right');
+  // }
 
   async initializeSketch() {
     const [EsriSketch, EsriGraphicsLayer] = await loadModules([
@@ -146,23 +176,39 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     this._view.ui.add(sketch, 'top-right');
     this._view.ui.add(this.warningMessageEl.nativeElement, 'top-right');
     this.warningMessageEl.nativeElement.classList.remove('hidden');
+    this._view.ui.add(this.inputProjectIdEl.nativeElement, 'top-right');
+    this.inputProjectIdEl.nativeElement.classList.remove('hidden');
     this._view.ui.add(this.submitButtonEl.nativeElement, 'top-right');
     this.submitButtonEl.nativeElement.classList.remove('hidden');
-    this._view.ui.add(this.jsonResultEl.nativeElement, 'top-right');
-    this.jsonResultEl.nativeElement.classList.remove('hidden');
 
     this._scaleChanged(0, 100000);
 
     return sketch;
   }
 
+  async initializeGP() {
+    try {
+      // Load the modules for the ArcGIS API for JavaScript
+      const [EsriGeoprocessor] = await loadModules([
+        'esri/tasks/Geoprocessor'
+      ]);
+
+      this._geoprocessor = new EsriGeoprocessor({
+        url: 'gp-url'
+      });
+    } catch (error) {
+      console.log('EsriLoader: ', error);
+    }
+  }
+
   async initializeMap() {
     try {
       // Load the modules for the ArcGIS API for JavaScript
-      const [EsriMap, EsriMapView, EsriWatchUtils] = await loadModules([
+      const [EsriMap, EsriMapView, EsriWatchUtils, EsriFeatureLayer] = await loadModules([
         'esri/Map',
         'esri/views/MapView',
-        'esri/core/watchUtils'
+        'esri/core/watchUtils',
+        'esri/layers/FeatureLayer'
       ]);
 
       // Configure the Map
@@ -171,6 +217,10 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       };
 
       const map: esri.Map = new EsriMap(mapProperties);
+      // this._editLayer = new EsriFeatureLayer({
+      //   url: this._editService
+      // });
+      // map.add(this._editLayer)
 
       // Initialize the MapView
       const mapViewProperties: esri.MapViewProperties = {
@@ -220,6 +270,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
       this.initializeSketch();
       this.initializeSearch();
+      this.initializeGP();
     });
   }
 
