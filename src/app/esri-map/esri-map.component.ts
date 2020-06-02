@@ -41,7 +41,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   @ViewChild('inputProjectIdNode', { static: true }) private inputProjectIdEl: ElementRef;
 
   // html text
-  public buttonText = 'Submit Selected Feature(s)';
+  public buttonText = 'Submit Drawn Feature(s)';
   public warningMessageText = 'Zoom in further to start drawing';
   public projectIdPlaceholder = 'Please enter project ID';
 
