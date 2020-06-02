@@ -25,6 +25,7 @@ import { loadModules } from 'esri-loader';
 import esri = __esri; // Esri TypeScript Types
 import { Button } from 'protractor';
 import { HttpClient } from '@angular/common/http';
+import { CloneVisitor } from '@angular/compiler/src/i18n/i18n_ast';
 
 @Component({
   selector: 'app-esri-map',
@@ -172,6 +173,16 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       availableCreateTools: ['polygon']
     });
     this._sketch = sketch;
+
+    this._sketch.on('create', (event) => {
+      if (event.state === 'complete') {
+        event.graphic.symbol.color = [250, 250, 0, 0.5];
+        event.graphic.symbol.outline = {
+          color: [50, 50, 0, 1],
+          width: '3px'
+        };
+      }
+    });
 
     this._view.ui.add(sketch, 'top-right');
     this._view.ui.add(this.warningMessageEl.nativeElement, 'top-right');
