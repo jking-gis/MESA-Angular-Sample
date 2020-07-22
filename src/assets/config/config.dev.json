@@ -1,0 +1,8 @@
+{
+  "env": {
+    "name": "dev"
+  },
+  "services": {
+    "edit": "https://services1.arcgis.com/g2TonOxuRkIqSOFx/arcgis/rest/services/Geodev_101_Polygon/FeatureServer/0"
+  }
+}

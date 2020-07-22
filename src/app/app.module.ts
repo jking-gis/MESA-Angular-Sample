@@ -1,14 +1,25 @@
-import { BrowserModule } from "@angular/platform-browser";
-import { NgModule } from "@angular/core";
-import { HttpClientModule } from "@angular/common/http"; 
+import { BrowserModule } from '@angular/platform-browser';
+import { NgModule } from '@angular/core';
+import { APP_INITIALIZER } from '@angular/core';
+import { HttpClientModule } from '@angular/common/http';
 
-import { AppComponent } from "./app.component";
-import { EsriMapComponent } from "./esri-map/esri-map.component";
+import { AppComponent } from './app.component';
+import { EsriMapComponent } from './esri-map/esri-map.component';
 
+import { AppConfig } from './app.config';
+
+export function initializeApp(appConfig: AppConfig) {
+  return () => appConfig.load();
+}
 @NgModule({
   declarations: [AppComponent, EsriMapComponent],
   imports: [BrowserModule, HttpClientModule],
-  providers: [],
+  providers: [
+    AppConfig,
+    { provide: APP_INITIALIZER,
+      useFactory: initializeApp,
+      deps: [AppConfig], multi: true }
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule {}

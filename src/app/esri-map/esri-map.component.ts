@@ -26,6 +26,7 @@ import esri = __esri; // Esri TypeScript Types
 import { Button } from 'protractor';
 import { HttpClient } from '@angular/common/http';
 import { CloneVisitor } from '@angular/compiler/src/i18n/i18n_ast';
+import { AppConfig } from './../app.config';
 
 @Component({
   selector: 'app-esri-map',
@@ -52,6 +53,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
    * _basemap sets type of map
    * _loaded provides map loaded status
    */
+
   private _zoom = 10;
   private _center: Array<number> = [0.1278, 51.5074];
   private _basemap = 'streets';
@@ -61,7 +63,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   private _search: esri.widgetsSearch = null;
   private _geoprocessor: esri.Geoprocessor = null;
 
-  private _editService: 'https://services1.arcgis.com/g2TonOxuRkIqSOFx/arcgis/rest/services/Geodev_101_Polygon/FeatureServer/0';
+  private _editService: string = AppConfig.settings.services.edit;
   private _editLayer: esri.FeatureLayer = null;
 
   get mapLoaded(): boolean {
