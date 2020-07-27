@@ -1,5 +1,6 @@
 <!-- Here's the DIV that we inject the map into -->
 <div #mapViewNode>
+  <app-geom-create class="hidden" #geomCreateNode></app-geom-create>
   <button disabled class="hidden" #submitButtonNode (click)="submitButtonClicked()">{{buttonText}}</button>
   <input class="hidden" type="text" #inputProjectIdNode (change)="inputProjectIdChanged()" placeholder="{{projectIdPlaceholder}}">
   <div class="warning-message hidden" #warningMessageNode>{{warningMessageText}}</div>
