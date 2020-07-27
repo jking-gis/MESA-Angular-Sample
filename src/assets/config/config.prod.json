@@ -2,7 +2,11 @@
   "env": {
     "name": "#{envName}"
   },
+  "portal": {
+    "url": "https://gis.eea.mass.gov/portal"
+  },
   "services": {
-    "edit": "#{editService}"
+    "edit": "https://services1.arcgis.com/g2TonOxuRkIqSOFx/arcgis/rest/services/Geodev_101_Polygon/FeatureServer/0",
+    "gp": "gp-url"
   }
 }

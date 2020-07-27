@@ -7,12 +7,13 @@ import { AppComponent } from './app.component';
 import { EsriMapComponent } from './esri-map/esri-map.component';
 
 import { AppConfig } from './app.config';
+import { GeomCreateComponent } from './geom-create/geom-create.component';
 
 export function initializeApp(appConfig: AppConfig) {
   return () => appConfig.load();
 }
 @NgModule({
-  declarations: [AppComponent, EsriMapComponent],
+  declarations: [AppComponent, EsriMapComponent, GeomCreateComponent],
   imports: [BrowserModule, HttpClientModule],
   providers: [
     AppConfig,

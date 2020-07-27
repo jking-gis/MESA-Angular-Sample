@@ -2,7 +2,11 @@
   "env": {
     "name": "dev"
   },
+  "portal": {
+    "url": "https://arcgis.com"
+  },
   "services": {
-    "edit": "https://services1.arcgis.com/g2TonOxuRkIqSOFx/arcgis/rest/services/Geodev_101_Polygon/FeatureServer/0"
+    "edit": "https://services1.arcgis.com/g2TonOxuRkIqSOFx/arcgis/rest/services/Geodev_101_Polygon/FeatureServer/0",
+    "gp": "gp-url"
   }
 }

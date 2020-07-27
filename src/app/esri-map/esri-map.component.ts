@@ -27,6 +27,7 @@ import { Button } from 'protractor';
 import { HttpClient } from '@angular/common/http';
 import { CloneVisitor } from '@angular/compiler/src/i18n/i18n_ast';
 import { AppConfig } from './../app.config';
+import { GeomCreateComponent } from '../geom-create/geom-create.component';
 
 @Component({
   selector: 'app-esri-map',
@@ -41,29 +42,25 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   @ViewChild('submitButtonNode', { static: true }) private submitButtonEl: ElementRef;
   @ViewChild('warningMessageNode', { static: true }) private warningMessageEl: ElementRef;
   @ViewChild('inputProjectIdNode', { static: true }) private inputProjectIdEl: ElementRef;
+  @ViewChild('geomCreateNode', { static: true }) private geomCreateEl: GeomCreateComponent;
 
   // html text
   public buttonText = 'Submit Drawn Feature(s)';
   public warningMessageText = 'Zoom in further to start drawing';
   public projectIdPlaceholder = 'Please enter project ID';
 
-  /**
-   * _zoom sets map zoom
-   * _center sets map center
-   * _basemap sets type of map
-   * _loaded provides map loaded status
-   */
-
   private _zoom = 10;
   private _center: Array<number> = [0.1278, 51.5074];
   private _basemap = 'streets';
   private _loaded = false;
   private _view: esri.MapView = null;
-  private _sketch: esri.Sketch = null;
   private _search: esri.widgetsSearch = null;
   private _geoprocessor: esri.Geoprocessor = null;
 
   private _editService: string = AppConfig.settings.services.edit;
+  private _gpService: string = AppConfig.settings.services.gp;
+  private _portalUrl: string = AppConfig.settings.portal.url;
+
   private _editLayer: esri.FeatureLayer = null;
 
   get mapLoaded(): boolean {
@@ -102,7 +99,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   submitButtonClicked() {
     const jsonFeatures = [];
     const inputProjectId = this.inputProjectIdEl.nativeElement.value;
-    this._sketch.layer.graphics.forEach(graphic => {
+    this.geomCreateEl.getSketch().layer.graphics.forEach(graphic => {
       graphic.attributes = {
         projectId: inputProjectId
       };
@@ -147,46 +144,12 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     this._view.ui.move('zoom', 'top-left');
   }
 
-  // async initializeEditor() {
-  //   const [EsriEditor] = await loadModules([
-  //     'esri/widgets/Editor'
-  //   ]);
+  async initializeGeomCreate() {
+    this.geomCreateEl.setView(this._view);
+    const sketch = await this.geomCreateEl.initializeSketch();
 
-  //   const editor: esri.Editor = new EsriEditor({
-  //     view: this._view
-  //   });
-
-  //   this._view.ui.add(editor, 'top-right');
-  // }
-
-  async initializeSketch() {
-    const [EsriSketch, EsriGraphicsLayer] = await loadModules([
-      'esri/widgets/Sketch',
-      'esri/layers/GraphicsLayer'
-    ]);
-
-    const layer: esri.GraphicsLayer = new EsriGraphicsLayer();
-    this._view.map.add(layer);
-
-    const sketch: esri.Sketch = new EsriSketch({
-      layer,
-      view: this._view,
-      creationMode: 'update',
-      availableCreateTools: ['polygon']
-    });
-    this._sketch = sketch;
-
-    this._sketch.on('create', (event) => {
-      if (event.state === 'complete') {
-        event.graphic.symbol.color = [250, 250, 0, 0.5];
-        event.graphic.symbol.outline = {
-          color: [50, 50, 0, 1],
-          width: '3px'
-        };
-      }
-    });
-
-    this._view.ui.add(sketch, 'top-right');
+    this._view.ui.add(this.geomCreateEl.getDom(), 'top-right');
+    this.geomCreateEl.getDom().classList.remove('hidden');
     this._view.ui.add(this.warningMessageEl.nativeElement, 'top-right');
     this.warningMessageEl.nativeElement.classList.remove('hidden');
     this._view.ui.add(this.inputProjectIdEl.nativeElement, 'top-right');
@@ -195,8 +158,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     this.submitButtonEl.nativeElement.classList.remove('hidden');
 
     this._scaleChanged(0, 100000);
-
-    return sketch;
   }
 
   async initializeGP() {
@@ -207,7 +168,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       ]);
 
       this._geoprocessor = new EsriGeoprocessor({
-        url: 'gp-url'
+        url: this._gpService
       });
     } catch (error) {
       console.log('EsriLoader: ', error);
@@ -263,7 +224,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       if (newVal > 10000) {
         polygonButton.setAttribute('disabled', '');
         this.warningMessageEl.nativeElement.classList.remove('hidden');
-        this._sketch.cancel();
+        this.geomCreateEl.getSketch().cancel();
       } else {
         polygonButton.removeAttribute('disabled');
         this.warningMessageEl.nativeElement.classList.add('hidden');
@@ -281,7 +242,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       this._loaded = this._view.ready;
       this.mapLoadedEvent.emit(true);
 
-      this.initializeSketch();
+      this.initializeGeomCreate();
       this.initializeSearch();
       this.initializeGP();
     });
